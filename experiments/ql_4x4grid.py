@@ -4,7 +4,7 @@ import sys
 
 import pandas as pd
 
-
+os.environ["SUMO_HOME"] = "/usr/share/sumo"
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
     sys.path.append(tools)
@@ -12,8 +12,12 @@ else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
 from sumo_rl import SumoEnvironment
-from sumo_rl.agents import QLAgent
-from sumo_rl.exploration import EpsilonGreedy
+# from sumo_rl.agents import QLAgent
+# from sumo_rl.exploration import EpsilonGreedy
+
+from sumo_rl.agents.ql_advanced_agent import ValueUpdateStrategy
+from sumo_rl.agents import QLAdvancedAgent
+from sumo_rl.exploration import EpsilonGreedyWithState
 
 
 if __name__ == "__main__":
@@ -27,7 +31,7 @@ if __name__ == "__main__":
         net_file="sumo_rl/nets/4x4-Lucas/4x4.net.xml",
         route_file="sumo_rl/nets/4x4-Lucas/4x4c1c2c1c2.rou.xml",
         use_gui=False,
-        num_seconds=80000,
+        num_seconds=10_000,# 80000,
         min_green=5,
         delta_time=5,
     )
@@ -35,13 +39,23 @@ if __name__ == "__main__":
     for run in range(1, runs + 1):
         initial_states = env.reset()
         ql_agents = {
-            ts: QLAgent(
+            # ts: QLAgent(
+            #     starting_state=env.encode(initial_states[ts], ts),
+            #     state_space=env.observation_space,
+            #     action_space=env.action_space,
+            #     alpha=alpha,
+            #     gamma=gamma,
+            #     exploration_strategy=EpsilonGreedy(initial_epsilon=0.05, min_epsilon=0.005, decay=decay),
+            # )
+            # for ts in env.ts_ids
+            ts: QLAdvancedAgent(
                 starting_state=env.encode(initial_states[ts], ts),
                 state_space=env.observation_space,
                 action_space=env.action_space,
                 alpha=alpha,
                 gamma=gamma,
-                exploration_strategy=EpsilonGreedy(initial_epsilon=0.05, min_epsilon=0.005, decay=decay),
+                exploration_strategy=EpsilonGreedyWithState(initial_epsilon=0.05, min_epsilon=0.005, decay=0.99),# decay),
+                value_update_strategy=ValueUpdateStrategy.SARSA  # Agent can update as classic Q-learning or SARSA
             )
             for ts in env.ts_ids
         }
@@ -62,6 +76,6 @@ if __name__ == "__main__":
                 for agent_id in s.keys():
                     ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])
 
-            env.save_csv(f"outputs/4x4/ql-4x4grid_run{run}", episode)
+            env.save_csv(f"outputs/4x4-my/ql-my-4x4grid_run{run}", episode)
 
     env.close()

@@ -12,7 +12,7 @@ sns.set(
     style="darkgrid",
     rc={
         "figure.figsize": (7.2, 4.45),
-        "text.usetex": True,
+        "text.usetex": False,
         "xtick.labelsize": 16,
         "ytick.labelsize": 16,
         "font.size": 15,
@@ -95,6 +95,6 @@ if __name__ == "__main__":
     plt.ylim(bottom=0)
 
     if args.output is not None:
-        plt.savefig(args.output + ".pdf", bbox_inches="tight")
+        plt.savefig(args.output + ".png", bbox_inches="tight")
 
     plt.show()
